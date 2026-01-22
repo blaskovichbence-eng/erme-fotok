@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { Coins, LogIn, LogOut, User } from 'lucide-react'
-import { initGoogleAuth, signIn, signOut, getUserInfo } from './services/googleAuth'
+import { initGoogleAuth, signIn, signOut, getUserInfo, restoreSession, getUserFromStorage, saveUserToStorage } from './services/googleAuth'
 import { GoogleUser } from './types/google'
 import { CoinData } from './types/coin'
 import CoinEntry from './components/CoinEntry'
@@ -13,14 +13,31 @@ function App() {
   const [selectedCoin, setSelectedCoin] = useState<CoinData | null>(null)
 
   useEffect(() => {
-    initGoogleAuth()
-      .then(() => {
+    const initializeApp = async () => {
+      try {
+        await initGoogleAuth()
+        
+        const storedUser = getUserFromStorage()
+        if (storedUser) {
+          console.log('Found stored user, attempting to restore session...')
+          const sessionRestored = await restoreSession()
+          
+          if (sessionRestored) {
+            setUser(storedUser)
+            console.log('Session restored successfully')
+          } else {
+            console.log('Session restore failed, user needs to sign in again')
+          }
+        }
+        
         setLoading(false)
-      })
-      .catch((err) => {
+      } catch (err: any) {
         setError(err.message)
         setLoading(false)
-      })
+      }
+    }
+    
+    initializeApp()
   }, [])
 
   const handleSignIn = async () => {
@@ -29,7 +46,11 @@ function App() {
       setError(null)
       await signIn()
       const userInfo = await getUserInfo()
-      setUser(userInfo)
+      if (userInfo) {
+        setUser(userInfo)
+        saveUserToStorage(userInfo)
+        console.log('User signed in and saved to storage')
+      }
       setLoading(false)
     } catch (err: any) {
       setError(err.message || 'Bejelentkezési hiba')

@@ -9,6 +9,10 @@ let gisInited = false
 let tokenClient: any = null
 let accessToken: string | null = null
 
+const TOKEN_STORAGE_KEY = 'google_access_token'
+const TOKEN_EXPIRY_KEY = 'google_token_expiry'
+const USER_STORAGE_KEY = 'google_user_info'
+
 export const initGoogleAuth = (): Promise<void> => {
   return new Promise((resolve, reject) => {
     if (typeof window === 'undefined') {
@@ -89,6 +93,86 @@ export const initGoogleAuth = (): Promise<void> => {
   })
 }
 
+const saveTokenToStorage = (token: string, expiresIn: number = 3600) => {
+  try {
+    const expiryTime = Date.now() + (expiresIn * 1000)
+    localStorage.setItem(TOKEN_STORAGE_KEY, token)
+    localStorage.setItem(TOKEN_EXPIRY_KEY, expiryTime.toString())
+    console.log('Token saved to localStorage, expires in', expiresIn, 'seconds')
+  } catch (error) {
+    console.error('Error saving token to localStorage:', error)
+  }
+}
+
+const getTokenFromStorage = (): string | null => {
+  try {
+    const token = localStorage.getItem(TOKEN_STORAGE_KEY)
+    const expiry = localStorage.getItem(TOKEN_EXPIRY_KEY)
+    
+    if (!token || !expiry) {
+      return null
+    }
+    
+    if (Date.now() > parseInt(expiry)) {
+      console.log('Token expired, clearing storage')
+      clearTokenFromStorage()
+      return null
+    }
+    
+    return token
+  } catch (error) {
+    console.error('Error reading token from localStorage:', error)
+    return null
+  }
+}
+
+const clearTokenFromStorage = () => {
+  try {
+    localStorage.removeItem(TOKEN_STORAGE_KEY)
+    localStorage.removeItem(TOKEN_EXPIRY_KEY)
+    localStorage.removeItem(USER_STORAGE_KEY)
+  } catch (error) {
+    console.error('Error clearing storage:', error)
+  }
+}
+
+export const saveUserToStorage = (user: GoogleUser) => {
+  try {
+    localStorage.setItem(USER_STORAGE_KEY, JSON.stringify(user))
+  } catch (error) {
+    console.error('Error saving user to localStorage:', error)
+  }
+}
+
+export const getUserFromStorage = (): GoogleUser | null => {
+  try {
+    const userStr = localStorage.getItem(USER_STORAGE_KEY)
+    if (!userStr) return null
+    return JSON.parse(userStr)
+  } catch (error) {
+    console.error('Error reading user from localStorage:', error)
+    return null
+  }
+}
+
+export const restoreSession = async (): Promise<boolean> => {
+  try {
+    const token = getTokenFromStorage()
+    if (!token) {
+      console.log('No stored token found')
+      return false
+    }
+    
+    accessToken = token
+    window.gapi.client.setToken({ access_token: token })
+    console.log('Session restored from localStorage')
+    return true
+  } catch (error) {
+    console.error('Error restoring session:', error)
+    return false
+  }
+}
+
 export const signIn = (): Promise<string> => {
   return new Promise((resolve, reject) => {
     if (!tokenClient) {
@@ -105,6 +189,10 @@ export const signIn = (): Promise<string> => {
       if (response.access_token) {
         accessToken = response.access_token
         window.gapi.client.setToken({ access_token: response.access_token })
+        
+        const expiresIn = response.expires_in || 3600
+        saveTokenToStorage(response.access_token, expiresIn)
+        
         console.log('Access token received and set')
         resolve(response.access_token)
       } else {
@@ -158,6 +246,8 @@ export const signOut = () => {
     window.gapi.client.setToken(null)
   }
   accessToken = null
+  clearTokenFromStorage()
+  console.log('Signed out and cleared storage')
 }
 
 declare global {
