@@ -25,8 +25,8 @@ export default function PhotoCapture({ coin, onComplete, onBack }: PhotoCaptureP
   const [uploadProgress, setUploadProgress] = useState('')
   const [error, setError] = useState<string | null>(null)
 
-  const needsFront = !coin.elolap_link
-  const needsBack = !coin.hatlap_link
+  const hasExistingFront = !!coin.elolap_link
+  const hasExistingBack = !!coin.hatlap_link
 
   const handleFileSelect = async (file: File, side: 'front' | 'back') => {
     try {
@@ -44,8 +44,8 @@ export default function PhotoCapture({ coin, onComplete, onBack }: PhotoCaptureP
   }
 
   const handleUpload = async () => {
-    if ((!needsFront || !frontImage) && (!needsBack || !backImage)) {
-      setError('Válassz ki képeket a feltöltéshez')
+    if (!frontImage && !backImage) {
+      setError('Válassz ki legalább egy képet a feltöltéshez')
       return
     }
 
@@ -60,7 +60,7 @@ export default function PhotoCapture({ coin, onComplete, onBack }: PhotoCaptureP
       let backLink = coin.hatlap_link
       let backId = coin.hatlap_id
 
-      if (needsFront && frontImage) {
+      if (frontImage) {
         setUploadProgress('Előlap feldolgozása...')
         const processedFront = await processImage(frontImage.file)
         const frontFileName = createFileName(coin.sorszam, coin.leiras, 'A')
@@ -71,7 +71,7 @@ export default function PhotoCapture({ coin, onComplete, onBack }: PhotoCaptureP
         frontId = frontResult.fileId
       }
 
-      if (needsBack && backImage) {
+      if (backImage) {
         setUploadProgress('Hátlap feldolgozása...')
         const processedBack = await processImage(backImage.file)
         const backFileName = createFileName(coin.sorszam, coin.leiras, 'B')
@@ -122,12 +122,12 @@ export default function PhotoCapture({ coin, onComplete, onBack }: PhotoCaptureP
       )}
 
       <div className="grid grid-cols-1 gap-4 mb-6">
-        {needsFront && (
+        {
           <div className="border-2 border-dashed border-gray-300 rounded-lg p-4">
             <div className="text-center mb-4">
               <Camera size={56} className="mx-auto mb-2 text-gray-400" />
-              <h3 className="text-lg font-bold text-gray-800 mb-1">Előlap (A)</h3>
-              <p className="text-sm text-gray-600">Kattints a képfeltöltéshez</p>
+              <h3 className="text-lg font-bold text-gray-800 mb-1">Előlap (A) {hasExistingFront && '(Frissítés)'}</h3>
+              <p className="text-sm text-gray-600">{hasExistingFront ? 'Új kép feltöltése' : 'Kattints a képfeltöltéshez'}</p>
             </div>
 
             {frontImage ? (
@@ -165,14 +165,14 @@ export default function PhotoCapture({ coin, onComplete, onBack }: PhotoCaptureP
               </label>
             )}
           </div>
-        )}
+        }
 
-        {needsBack && (
+        {
           <div className="border-2 border-dashed border-gray-300 rounded-lg p-4">
             <div className="text-center mb-4">
               <Camera size={56} className="mx-auto mb-2 text-gray-400" />
-              <h3 className="text-lg font-bold text-gray-800 mb-1">Hátlap (B)</h3>
-              <p className="text-sm text-gray-600">Kattints a képfeltöltéshez</p>
+              <h3 className="text-lg font-bold text-gray-800 mb-1">Hátlap (B) {hasExistingBack && '(Frissítés)'}</h3>
+              <p className="text-sm text-gray-600">{hasExistingBack ? 'Új kép feltöltése' : 'Kattints a képfeltöltéshez'}</p>
             </div>
 
             {backImage ? (
@@ -210,7 +210,7 @@ export default function PhotoCapture({ coin, onComplete, onBack }: PhotoCaptureP
               </label>
             )}
           </div>
-        )}
+        }
       </div>
 
       {uploading && (
@@ -232,7 +232,7 @@ export default function PhotoCapture({ coin, onComplete, onBack }: PhotoCaptureP
         </button>
         <button
           onClick={handleUpload}
-          disabled={uploading || (needsFront && !frontImage) || (needsBack && !backImage)}
+          disabled={uploading || (!frontImage && !backImage)}
           className="w-full sm:flex-1 px-6 py-4 sm:py-3 bg-green-600 hover:bg-green-700 active:bg-green-800 text-white font-semibold rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 text-lg touch-manipulation"
         >
           {uploading ? (
