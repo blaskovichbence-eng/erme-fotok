@@ -2,9 +2,17 @@ import { CoinData } from '../types/coin'
 
 const SHEET_ID = import.meta.env.VITE_SHEET_ID
 
+const ensureGapiLoaded = async (): Promise<void> => {
+  if (!window.gapi?.client?.sheets) {
+    throw new Error('Google Sheets API not loaded. Please try again.')
+  }
+}
+
 export const getCoinBySerialNumber = async (serialNumber: number): Promise<CoinData | null> => {
   try {
     console.log('Fetching coin data for serial number:', serialNumber)
+    
+    await ensureGapiLoaded()
     
     const response = await window.gapi.client.sheets.spreadsheets.values.get({
       spreadsheetId: SHEET_ID,
@@ -70,6 +78,8 @@ export const updateCoinImages = async (
 ): Promise<boolean> => {
   try {
     console.log('Updating coin images for serial number:', serialNumber)
+
+    await ensureGapiLoaded()
 
     const response = await window.gapi.client.sheets.spreadsheets.values.get({
       spreadsheetId: SHEET_ID,

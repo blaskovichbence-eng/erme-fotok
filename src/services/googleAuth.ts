@@ -163,6 +163,11 @@ export const restoreSession = async (): Promise<boolean> => {
       return false
     }
     
+    if (!window.gapi?.client) {
+      console.error('gapi client not initialized')
+      return false
+    }
+    
     accessToken = token
     window.gapi.client.setToken({ access_token: token })
     console.log('Session restored from localStorage')
