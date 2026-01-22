@@ -34,33 +34,8 @@ export const initGoogleAuth = (): Promise<void> => {
       return
     }
 
-    const gapiScript = document.createElement('script')
-    gapiScript.src = 'https://apis.google.com/js/api.js'
-    gapiScript.onload = () => {
-      console.log('gapi script loaded')
-      window.gapi.load('client', async () => {
-        try {
-          await window.gapi.client.init({
-            apiKey: API_KEY,
-          })
-          console.log('gapi client initialized')
-          
-          await window.gapi.client.load('sheets', 'v4')
-          console.log('Sheets API loaded')
-          
-          await window.gapi.client.load('drive', 'v3')
-          console.log('Drive API loaded')
-          
-          gapiInited = true
-          maybeResolve()
-        } catch (error) {
-          console.error('Error initializing gapi client:', error)
-          reject(error)
-        }
-      })
-    }
-    gapiScript.onerror = () => reject(new Error('Failed to load gapi'))
-    document.head.appendChild(gapiScript)
+    gapiInited = true
+    console.log('Skipping gapi client - using direct REST API calls')
 
     const gisScript = document.createElement('script')
     gisScript.src = 'https://accounts.google.com/gsi/client'
@@ -166,13 +141,7 @@ export const restoreSession = async (): Promise<boolean> => {
       return false
     }
     
-    if (!window.gapi?.client) {
-      console.error('gapi client not initialized')
-      return false
-    }
-    
     accessToken = token
-    window.gapi.client.setToken({ access_token: token })
     console.log('Session restored from localStorage')
     return true
   } catch (error) {
@@ -196,7 +165,6 @@ export const signIn = (): Promise<string> => {
       }
       if (response.access_token) {
         accessToken = response.access_token
-        window.gapi.client.setToken({ access_token: response.access_token })
         
         const expiresIn = response.expires_in || 3600
         saveTokenToStorage(response.access_token, expiresIn)
@@ -208,11 +176,7 @@ export const signIn = (): Promise<string> => {
       }
     }
 
-    if (window.gapi.client.getToken() === null) {
-      tokenClient.requestAccessToken({ prompt: 'consent' })
-    } else {
-      tokenClient.requestAccessToken({ prompt: '' })
-    }
+    tokenClient.requestAccessToken({ prompt: '' })
   })
 }
 
@@ -222,15 +186,14 @@ export const getAccessToken = (): string | null => {
 
 export const getUserInfo = async (): Promise<GoogleUser | null> => {
   try {
-    const token = window.gapi.client.getToken()
-    if (!token || !token.access_token) {
+    if (!accessToken) {
       console.error('No access token available')
       return null
     }
 
     const response = await fetch('https://www.googleapis.com/oauth2/v2/userinfo', {
       headers: {
-        Authorization: `Bearer ${token.access_token}`
+        Authorization: `Bearer ${accessToken}`
       }
     })
 
@@ -246,12 +209,10 @@ export const getUserInfo = async (): Promise<GoogleUser | null> => {
 }
 
 export const signOut = () => {
-  const token = window.gapi.client.getToken()
-  if (token !== null) {
-    window.google.accounts.oauth2.revoke(token.access_token, () => {
+  if (accessToken) {
+    window.google.accounts.oauth2.revoke(accessToken, () => {
       console.log('Token revoked')
     })
-    window.gapi.client.setToken(null)
   }
   accessToken = null
   clearTokenFromStorage()

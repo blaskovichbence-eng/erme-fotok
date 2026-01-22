@@ -1,4 +1,7 @@
+import { getAccessToken } from './googleAuth'
+
 const DRIVE_FOLDER_ID = import.meta.env.VITE_DRIVE_FOLDER_ID
+const DRIVE_API_BASE = 'https://www.googleapis.com/drive/v3'
 
 interface UploadResult {
   fileId: string
@@ -7,29 +10,53 @@ interface UploadResult {
 
 const findOrCreateFolder = async (folderName: string, parentId: string): Promise<string> => {
   try {
-    const response = await window.gapi.client.drive.files.list({
-      q: `name='${folderName}' and '${parentId}' in parents and mimeType='application/vnd.google-apps.folder' and trashed=false`,
-      fields: 'files(id, name)',
-      spaces: 'drive'
+    const token = getAccessToken()
+    if (!token) {
+      throw new Error('No access token available')
+    }
+
+    const query = `name='${folderName}' and '${parentId}' in parents and mimeType='application/vnd.google-apps.folder' and trashed=false`
+    const url = `${DRIVE_API_BASE}/files?q=${encodeURIComponent(query)}&fields=files(id,name)&spaces=drive`
+    
+    const response = await fetch(url, {
+      headers: {
+        'Authorization': `Bearer ${token}`,
+      }
     })
 
-    if (response.result.files && response.result.files.length > 0) {
-      console.log('Folder found:', folderName, response.result.files[0].id)
-      return response.result.files[0].id!
+    if (!response.ok) {
+      throw new Error(`Drive API error: ${response.status}`)
+    }
+
+    const data = await response.json()
+
+    if (data.files && data.files.length > 0) {
+      console.log('Folder found:', folderName, data.files[0].id)
+      return data.files[0].id
     }
 
     console.log('Creating folder:', folderName)
-    const createResponse = await window.gapi.client.drive.files.create({
-      resource: {
+    const createUrl = `${DRIVE_API_BASE}/files?fields=id`
+    const createResponse = await fetch(createUrl, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
         name: folderName,
         mimeType: 'application/vnd.google-apps.folder',
         parents: [parentId]
-      },
-      fields: 'id'
+      })
     })
 
-    console.log('Folder created:', createResponse.result.id)
-    return createResponse.result.id!
+    if (!createResponse.ok) {
+      throw new Error(`Drive API create error: ${createResponse.status}`)
+    }
+
+    const createData = await createResponse.json()
+    console.log('Folder created:', createData.id)
+    return createData.id
   } catch (error) {
     console.error('Error finding/creating folder:', error)
     throw error
@@ -56,7 +83,7 @@ export const uploadImageToDrive = async (
     form.append('metadata', new Blob([JSON.stringify(metadata)], { type: 'application/json' }))
     form.append('file', imageBlob)
 
-    const token = window.gapi.client.getToken()
+    const token = getAccessToken()
     if (!token) {
       throw new Error('No access token available')
     }
@@ -66,7 +93,7 @@ export const uploadImageToDrive = async (
       {
         method: 'POST',
         headers: {
-          Authorization: `Bearer ${token.access_token}`
+          Authorization: `Bearer ${token}`
         },
         body: form
       }
@@ -79,15 +106,24 @@ export const uploadImageToDrive = async (
     const result = await response.json()
     console.log('Upload successful:', result)
 
-    await window.gapi.client.drive.permissions.create({
-      fileId: result.id,
-      resource: {
+    const permUrl = `${DRIVE_API_BASE}/files/${result.id}/permissions`
+    const permResponse = await fetch(permUrl, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
         role: 'reader',
         type: 'anyone'
-      }
+      })
     })
 
-    console.log('File shared publicly')
+    if (!permResponse.ok) {
+      console.warn('Failed to set public permissions:', permResponse.status)
+    } else {
+      console.log('File shared publicly')
+    }
 
     return {
       fileId: result.id,

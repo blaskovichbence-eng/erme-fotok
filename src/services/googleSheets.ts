@@ -1,25 +1,32 @@
 import { CoinData } from '../types/coin'
+import { getAccessToken } from './googleAuth'
 
 const SHEET_ID = import.meta.env.VITE_SHEET_ID
-
-const ensureGapiLoaded = async (): Promise<void> => {
-  if (!window.gapi?.client?.sheets) {
-    throw new Error('Google Sheets API not loaded. Please try again.')
-  }
-}
+const SHEETS_API_BASE = 'https://sheets.googleapis.com/v4/spreadsheets'
 
 export const getCoinBySerialNumber = async (serialNumber: number): Promise<CoinData | null> => {
   try {
     console.log('Fetching coin data for serial number:', serialNumber)
     
-    await ensureGapiLoaded()
+    const token = getAccessToken()
+    if (!token) {
+      throw new Error('No access token available')
+    }
     
-    const response = await window.gapi.client.sheets.spreadsheets.values.get({
-      spreadsheetId: SHEET_ID,
-      range: 'A:Q',
+    const url = `${SHEETS_API_BASE}/${SHEET_ID}/values/A:Q`
+    const response = await fetch(url, {
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json',
+      }
     })
 
-    const rows = response.result.values
+    if (!response.ok) {
+      throw new Error(`Sheets API error: ${response.status}`)
+    }
+
+    const data = await response.json()
+    const rows = data.values
     if (!rows || rows.length === 0) {
       console.error('No data found in sheet')
       return null
@@ -79,14 +86,25 @@ export const updateCoinImages = async (
   try {
     console.log('Updating coin images for serial number:', serialNumber)
 
-    await ensureGapiLoaded()
+    const token = getAccessToken()
+    if (!token) {
+      throw new Error('No access token available')
+    }
 
-    const response = await window.gapi.client.sheets.spreadsheets.values.get({
-      spreadsheetId: SHEET_ID,
-      range: 'A:A',
+    const url = `${SHEETS_API_BASE}/${SHEET_ID}/values/A:A`
+    const response = await fetch(url, {
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json',
+      }
     })
 
-    const rows = response.result.values
+    if (!response.ok) {
+      throw new Error(`Sheets API error: ${response.status}`)
+    }
+
+    const data = await response.json()
+    const rows = data.values
     if (!rows || rows.length === 0) {
       console.error('No data found in sheet')
       return false
@@ -101,16 +119,24 @@ export const updateCoinImages = async (
 
     const actualRowNumber = rowIndex + 1
 
-    const updateResponse = await window.gapi.client.sheets.spreadsheets.values.update({
-      spreadsheetId: SHEET_ID,
-      range: `N${actualRowNumber}:Q${actualRowNumber}`,
-      valueInputOption: 'RAW',
-      resource: {
+    const updateUrl = `${SHEETS_API_BASE}/${SHEET_ID}/values/N${actualRowNumber}:Q${actualRowNumber}?valueInputOption=RAW`
+    const updateResponse = await fetch(updateUrl, {
+      method: 'PUT',
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
         values: [[frontLink, backLink, frontId, backId]]
-      }
+      })
     })
 
-    console.log('Update response:', updateResponse)
+    if (!updateResponse.ok) {
+      throw new Error(`Sheets API update error: ${updateResponse.status}`)
+    }
+
+    const updateData = await updateResponse.json()
+    console.log('Update response:', updateData)
     return true
   } catch (error) {
     console.error('Error updating coin images:', error)
