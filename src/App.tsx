@@ -22,6 +22,7 @@ function App() {
   const [activeView, setActiveView] = useState<'search' | 'list'>('list')
   const [sourceView, setSourceView] = useState<'search' | 'list'>('list')
   const [listRefreshTrigger, setListRefreshTrigger] = useState(0)
+  const [currentListCoins, setCurrentListCoins] = useState<CoinData[]>([])
 
   useEffect(() => {
     const initializeApp = async () => {
@@ -158,8 +159,14 @@ function App() {
           <CoinDetailsWithCapture
             coin={selectedCoin}
             onComplete={() => {
-              setListRefreshTrigger(prev => prev + 1)
-              setSelectedCoin(null)
+              const currentIndex = currentListCoins.findIndex(c => c.sorszam === selectedCoin.sorszam)
+              if (currentIndex !== -1 && currentIndex < currentListCoins.length - 1) {
+                const nextCoin = currentListCoins[currentIndex + 1]
+                setSelectedCoin(nextCoin)
+              } else {
+                setListRefreshTrigger(prev => prev + 1)
+                setSelectedCoin(null)
+              }
             }}
             onBack={() => {
               setSelectedCoin(null)
@@ -183,7 +190,10 @@ function App() {
             onCoinSelected={(coin) => {
               setSourceView('list')
               setSelectedCoin(coin)
-            }} 
+            }}
+            onCoinsLoaded={(coins) => {
+              setCurrentListCoins(coins)
+            }}
           />
         ) : (
           <CoinEntry 

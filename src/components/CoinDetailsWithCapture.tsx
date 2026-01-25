@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Camera, Upload, CheckCircle } from 'lucide-react'
 import { CoinData } from '../types/coin'
 import { createImagePreview } from '../utils/imageProcessor'
@@ -20,6 +20,12 @@ export default function CoinDetailsWithCapture({ coin, onComplete, onBack }: Coi
   const [frontImage, setFrontImage] = useState<ImageData | null>(null)
   const [backImage, setBackImage] = useState<ImageData | null>(null)
   const [error, setError] = useState<string | null>(null)
+
+  useEffect(() => {
+    setFrontImage(null)
+    setBackImage(null)
+    setError(null)
+  }, [coin.sorszam])
 
   const handleFileSelect = async (file: File, side: 'front' | 'back') => {
     try {

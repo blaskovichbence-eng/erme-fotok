@@ -6,9 +6,10 @@ import { getCoinsWithoutImages } from '../services/googleSheets'
 interface CoinListProps {
   onCoinSelected: (coin: CoinData) => void
   refreshTrigger?: number
+  onCoinsLoaded?: (coins: CoinData[]) => void
 }
 
-export default function CoinList({ onCoinSelected, refreshTrigger }: CoinListProps) {
+export default function CoinList({ onCoinSelected, refreshTrigger, onCoinsLoaded }: CoinListProps) {
   const [coins, setCoins] = useState<CoinData[]>([])
   const [totalCount, setTotalCount] = useState(0)
   const [currentPage, setCurrentPage] = useState(1)
@@ -30,6 +31,9 @@ export default function CoinList({ onCoinSelected, refreshTrigger }: CoinListPro
       const data = await getCoinsWithoutImages(itemsPerPage, offset)
       setCoins(data.coins)
       setTotalCount(data.total)
+      if (onCoinsLoaded) {
+        onCoinsLoaded(data.coins)
+      }
     } catch (err: any) {
       setError(err.message || 'Hiba történt az adatok lekérdezése során')
     } finally {
