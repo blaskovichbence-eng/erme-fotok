@@ -6,12 +6,20 @@ import { CoinData } from './types/coin'
 import CoinEntry from './components/CoinEntry'
 import PhotoCapture from './components/PhotoCapture'
 import UploadProgress from './components/UploadProgress'
+import UploadStatusIcon from './components/UploadStatusIcon'
+import CoinList from './components/CoinList'
+import BottomNavigation from './components/BottomNavigation'
 
 function App() {
   const [user, setUser] = useState<GoogleUser | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [selectedCoin, setSelectedCoin] = useState<CoinData | null>(null)
+  const [nextSerialNumber, setNextSerialNumber] = useState<number | undefined>(undefined)
+  const [showUploadProgress, setShowUploadProgress] = useState(false)
+  const [activeView, setActiveView] = useState<'search' | 'list'>('list')
+  const [sourceView, setSourceView] = useState<'search' | 'list'>('list')
+  const [listRefreshTrigger, setListRefreshTrigger] = useState(0)
 
   useEffect(() => {
     const initializeApp = async () => {
@@ -75,25 +83,25 @@ function App() {
           
           {user && (
             <div className="flex items-center gap-2 sm:gap-4">
-              <div className="hidden sm:flex items-center gap-2">
-                {user.picture && (
-                  <img src={user.picture} alt={user.name} className="w-8 h-8 rounded-full" />
-                )}
-                <span className="text-sm">{user.name}</span>
+              <UploadStatusIcon onClick={() => setShowUploadProgress(true)} />
+              
+              <div className="hidden sm:flex items-center gap-2 text-gray-700">
+                <User size={20} />
+                <span className="text-sm font-medium">{user.name}</span>
               </div>
               <button
                 onClick={handleSignOut}
-                className="flex items-center gap-1 sm:gap-2 px-3 sm:px-4 py-2 bg-red-600 hover:bg-red-700 active:bg-red-800 rounded-lg transition-colors touch-manipulation"
+                className="flex items-center gap-2 px-3 sm:px-4 py-2 bg-red-600 hover:bg-red-700 active:bg-red-800 text-white rounded-lg transition-colors text-sm sm:text-base font-semibold touch-manipulation"
               >
                 <LogOut size={18} />
-                <span className="hidden sm:inline">Kijelentkezés</span>
+                Kijelentkezés
               </button>
             </div>
           )}
         </div>
       </header>
       
-      <main className="max-w-4xl mx-auto p-4 sm:p-6">
+      <main className="max-w-4xl mx-auto p-4 sm:p-6 pb-24">
         {loading ? (
           <div className="bg-white rounded-lg shadow-md p-8 text-center">
             <p className="text-gray-600">Betöltés...</p>
@@ -136,24 +144,48 @@ function App() {
           <PhotoCapture
             coin={selectedCoin}
             onComplete={() => {
-              const nextSerial = selectedCoin.sorszam + 1
-              setSelectedCoin(null)
-              setTimeout(() => {
-                const input = document.querySelector('input[type="number"]') as HTMLInputElement
-                if (input) {
-                  input.value = String(nextSerial)
-                  input.focus()
-                }
-              }, 100)
+              if (sourceView === 'list') {
+                setListRefreshTrigger(prev => prev + 1)
+                setSelectedCoin(null)
+              } else {
+                const next = selectedCoin.sorszam + 1
+                setNextSerialNumber(next)
+                setSelectedCoin(null)
+              }
             }}
             onBack={() => setSelectedCoin(null)}
           />
+        ) : activeView === 'list' ? (
+          <CoinList 
+            refreshTrigger={listRefreshTrigger}
+            onCoinSelected={(coin) => {
+              setSourceView('list')
+              setSelectedCoin(coin)
+            }} 
+          />
         ) : (
-          <CoinEntry onCoinSelected={(coin) => setSelectedCoin(coin)} />
+          <CoinEntry 
+            key={nextSerialNumber}
+            initialSerialNumber={nextSerialNumber}
+            onCoinSelected={(coin) => {
+              setSourceView('search')
+              setSelectedCoin(coin)
+            }} 
+          />
         )}
       </main>
       
-      <UploadProgress />
+      {!selectedCoin && user && (
+        <BottomNavigation 
+          activeView={activeView}
+          onViewChange={setActiveView}
+        />
+      )}
+      
+      <UploadProgress 
+        isOpen={showUploadProgress} 
+        onClose={() => setShowUploadProgress(false)} 
+      />
     </div>
   )
 }

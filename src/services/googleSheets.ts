@@ -76,6 +76,69 @@ export const getCoinBySerialNumber = async (serialNumber: number): Promise<CoinD
   }
 }
 
+export const getCoinsWithoutImages = async (limit: number = 10, offset: number = 0): Promise<{ coins: CoinData[], total: number }> => {
+  try {
+    console.log('Fetching coins without images, limit:', limit, 'offset:', offset)
+    
+    const token = getAccessToken()
+    if (!token) {
+      throw new Error('No access token available')
+    }
+    
+    const url = `${SHEETS_API_BASE}/${SHEET_ID}/values/A:Q`
+    const response = await fetch(url, {
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json',
+      }
+    })
+
+    if (!response.ok) {
+      throw new Error(`Sheets API error: ${response.status}`)
+    }
+
+    const data = await response.json()
+    const rows = data.values
+    if (!rows || rows.length === 0) {
+      console.error('No data found in sheet')
+      return { coins: [], total: 0 }
+    }
+
+    const dataRows = rows.slice(1)
+
+    const allCoins = dataRows
+      .map((row: any) => ({
+        sorszam: parseInt(row[0]) || 0,
+        tervezoSorszam: parseInt(row[1]) || 0,
+        tervezo: row[2] || '',
+        leiras: row[3] || '',
+        dobozban: row[4] || '',
+        csomagolas: row[5] || '',
+        ertekesitve: row[6] || '',
+        ev: row[7] || '',
+        anyag: row[8] || '',
+        suly: row[9] || '',
+        meret: row[10] || '',
+        megjegyzes: row[11] || '',
+        kategoria: row[12] || '',
+        elolap_link: row[13] || '',
+        hatlap_link: row[14] || '',
+        elolap_id: row[15] || '',
+        hatlap_id: row[16] || '',
+      }))
+      .filter((coin: CoinData) => !coin.elolap_link && !coin.hatlap_link)
+      .sort((a: CoinData, b: CoinData) => a.sorszam - b.sorszam)
+
+    const coinsWithoutImages = allCoins.slice(offset, offset + limit)
+
+    console.log(`Found ${allCoins.length} total coins without images, returning ${coinsWithoutImages.length} from offset ${offset}`)
+    return { coins: coinsWithoutImages, total: allCoins.length }
+  } catch (error) {
+    console.error('Error fetching coins without images:', error)
+    return { coins: [], total: 0 }
+  }
+}
+
 export const updateCoinImages = async (
   serialNumber: number,
   frontLink: string,

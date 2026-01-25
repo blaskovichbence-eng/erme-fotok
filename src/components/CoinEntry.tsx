@@ -5,10 +5,11 @@ import { getCoinBySerialNumber } from '../services/googleSheets'
 
 interface CoinEntryProps {
   onCoinSelected: (coin: CoinData) => void
+  initialSerialNumber?: number
 }
 
-export default function CoinEntry({ onCoinSelected }: CoinEntryProps) {
-  const [serialNumber, setSerialNumber] = useState('')
+export default function CoinEntry({ onCoinSelected, initialSerialNumber }: CoinEntryProps) {
+  const [serialNumber, setSerialNumber] = useState(initialSerialNumber ? String(initialSerialNumber) : '')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [coinData, setCoinData] = useState<CoinData | null>(null)
@@ -93,85 +94,85 @@ export default function CoinEntry({ onCoinSelected }: CoinEntryProps) {
       )}
 
       {coinData && !loading && (
-        <div className="border-2 border-gray-200 rounded-lg p-4 sm:p-6">
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-6">
-            <div className="bg-gray-50 p-3 rounded-lg">
-              <p className="text-xs sm:text-sm text-gray-600 mb-1">Sorszám</p>
-              <p className="text-xl sm:text-lg font-bold text-gray-800">{coinData.sorszam}</p>
+        <div className="border-2 border-gray-200 rounded-lg">
+          <div className="sticky top-0 z-10 bg-blue-600 text-white p-3 rounded-t-lg shadow-md">
+            <p className="text-lg font-bold">Érme #{coinData.sorszam}</p>
+          </div>
+          
+          <div className="p-4 space-y-3">
+            <div className="flex items-baseline gap-2 border-b border-gray-200 pb-2">
+              <span className="text-xs text-gray-500 w-20">Tervező:</span>
+              <span className="text-sm font-semibold text-gray-800">{coinData.tervezo}</span>
             </div>
-            <div className="bg-gray-50 p-3 rounded-lg">
-              <p className="text-xs sm:text-sm text-gray-600 mb-1">Tervező</p>
-              <p className="text-xl sm:text-lg font-bold text-gray-800">{coinData.tervezo}</p>
+            
+            <div className="flex items-baseline gap-2 border-b border-gray-200 pb-2">
+              <span className="text-xs text-gray-500 w-20">Leírás:</span>
+              <span className="text-sm font-semibold text-gray-800">{coinData.leiras}</span>
             </div>
-            <div className="col-span-1 sm:col-span-2 bg-blue-50 p-3 rounded-lg">
-              <p className="text-xs sm:text-sm text-gray-600 mb-1">Leírás</p>
-              <p className="text-lg sm:text-lg font-bold text-gray-800">{coinData.leiras}</p>
-            </div>
-            <div className="bg-gray-50 p-3 rounded-lg">
-              <p className="text-xs sm:text-sm text-gray-600 mb-1">Méret</p>
-              <p className="text-xl sm:text-lg font-bold text-gray-800">{coinData.meret || '-'}</p>
-            </div>
-            <div className="bg-gray-50 p-3 rounded-lg">
-              <p className="text-xs sm:text-sm text-gray-600 mb-1">Anyag</p>
-              <p className="text-xl sm:text-lg font-bold text-gray-800">{coinData.anyag || '-'}</p>
+            
+            <div className="grid grid-cols-2 gap-2">
+              <div className="flex items-baseline gap-2">
+                <span className="text-xs text-gray-500">Méret:</span>
+                <span className="text-sm font-semibold text-gray-800">{coinData.meret || '-'}</span>
+              </div>
+              <div className="flex items-baseline gap-2">
+                <span className="text-xs text-gray-500">Anyag:</span>
+                <span className="text-sm font-semibold text-gray-800">{coinData.anyag || '-'}</span>
+              </div>
             </div>
           </div>
 
-          <div className="mb-6 p-4 bg-gray-50 rounded-lg border-2 border-gray-200">
-            <p className="text-sm font-semibold text-gray-700 mb-3">Képek állapota</p>
-            <div className="flex flex-col sm:flex-row gap-3">
-              <div className="flex items-center gap-2 p-2 bg-white rounded">
+          <div className="p-4 bg-gray-50 border-t border-gray-200">
+            <p className="text-xs text-gray-600 mb-2">Képek állapota</p>
+            <div className="flex gap-3">
+              <div className="flex items-center gap-1">
                 {coinData.elolap_link ? (
-                  <CheckCircle size={24} className="text-green-600 flex-shrink-0" />
+                  <CheckCircle size={16} className="text-green-600" />
                 ) : (
-                  <XCircle size={24} className="text-red-600 flex-shrink-0" />
+                  <XCircle size={16} className="text-red-600" />
                 )}
-                <span className="text-base font-medium">
-                  Előlap (A) {coinData.elolap_link ? '✓' : '✗'}
-                </span>
+                <span className="text-sm font-medium">Előlap</span>
               </div>
-              <div className="flex items-center gap-2 p-2 bg-white rounded">
+              <div className="flex items-center gap-1">
                 {coinData.hatlap_link ? (
-                  <CheckCircle size={24} className="text-green-600 flex-shrink-0" />
+                  <CheckCircle size={16} className="text-green-600" />
                 ) : (
-                  <XCircle size={24} className="text-red-600 flex-shrink-0" />
+                  <XCircle size={16} className="text-red-600" />
                 )}
-                <span className="text-base font-medium">
-                  Hátlap (B) {coinData.hatlap_link ? '✓' : '✗'}
-                </span>
+                <span className="text-sm font-medium">Hátlap</span>
               </div>
             </div>
           </div>
 
-          <div className="mb-6">
-            <label className="flex items-start gap-3 p-4 border-2 border-gray-300 rounded-lg cursor-pointer hover:bg-gray-50 active:bg-gray-100 transition-colors touch-manipulation">
+          <div className="p-4 border-t border-gray-200">
+            <label className="flex items-center gap-2 cursor-pointer">
               <input
                 type="checkbox"
                 checked={confirmed}
                 onChange={(e) => setConfirmed(e.target.checked)}
-                className="w-6 h-6 mt-0.5 text-blue-600 rounded focus:ring-2 focus:ring-blue-500 flex-shrink-0"
+                className="w-5 h-5 text-blue-600 rounded focus:ring-2 focus:ring-blue-500"
               />
-              <span className="text-base sm:text-base text-gray-800 font-semibold leading-relaxed">
+              <span className="text-sm text-gray-800 font-medium">
                 Megerősítem, hogy ez a megfelelő érme
               </span>
             </label>
           </div>
 
-          <div className="flex flex-col sm:flex-row gap-3">
+          <div className="flex gap-2 p-4 bg-gray-50 border-t border-gray-200 rounded-b-lg">
             <button
               onClick={() => {
                 setCoinData(null)
                 setSerialNumber('')
                 setConfirmed(false)
               }}
-              className="w-full sm:flex-1 px-6 py-4 sm:py-3 bg-gray-200 hover:bg-gray-300 active:bg-gray-400 text-gray-800 font-semibold rounded-lg transition-colors text-lg touch-manipulation"
+              className="flex-1 px-4 py-3 bg-gray-200 hover:bg-gray-300 text-gray-800 font-semibold rounded-lg transition-colors text-sm"
             >
-              ← Másik érem
+              ← Másik
             </button>
             <button
               onClick={handleConfirm}
               disabled={!confirmed}
-              className="w-full sm:flex-1 px-6 py-4 sm:py-3 bg-green-600 hover:bg-green-700 active:bg-green-800 text-white font-semibold rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed text-lg touch-manipulation"
+              className="flex-1 px-4 py-3 bg-green-600 hover:bg-green-700 text-white font-semibold rounded-lg transition-colors disabled:opacity-50 text-sm"
             >
               Fotózás →
             </button>

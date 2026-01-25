@@ -47,7 +47,14 @@ export const initGoogleAuth = (): Promise<void> => {
           tokenClient = window.google.accounts.oauth2.initTokenClient({
             client_id: CLIENT_ID,
             scope: SCOPES,
-            callback: '', 
+            callback: (response: GoogleAuthResponse) => {
+              if (response.access_token) {
+                accessToken = response.access_token
+                const expiresIn = response.expires_in || 3600
+                saveTokenToStorage(response.access_token, expiresIn)
+                console.log('Token received and saved to storage')
+              }
+            }, 
           })
           console.log('Token client initialized')
           gisInited = true
@@ -157,21 +164,24 @@ export const signIn = (): Promise<string> => {
       return
     }
 
+    const originalCallback = tokenClient.callback
+    
     tokenClient.callback = async (response: GoogleAuthResponse) => {
       if (response.error) {
         console.error('Auth error:', response.error)
+        tokenClient.callback = originalCallback
         reject(new Error(response.error))
         return
       }
       if (response.access_token) {
         accessToken = response.access_token
-        
         const expiresIn = response.expires_in || 3600
         saveTokenToStorage(response.access_token, expiresIn)
-        
-        console.log('Access token received and set')
+        console.log('Sign in successful, token saved')
+        tokenClient.callback = originalCallback
         resolve(response.access_token)
       } else {
+        tokenClient.callback = originalCallback
         reject(new Error('No access token received'))
       }
     }
@@ -182,7 +192,13 @@ export const signIn = (): Promise<string> => {
 
 export const getAccessToken = (): string | null => {
   if (!accessToken) {
+    console.log('accessToken is null, trying to load from storage...')
     accessToken = getTokenFromStorage()
+    if (accessToken) {
+      console.log('Token loaded from storage successfully')
+    } else {
+      console.error('No token found in storage either!')
+    }
   }
   return accessToken
 }
