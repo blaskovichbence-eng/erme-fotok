@@ -6,14 +6,17 @@ import { getCoinBySerialNumber } from '../services/googleSheets'
 interface CoinEntryProps {
   onCoinSelected: (coin: CoinData) => void
   initialSerialNumber?: number
+  coin?: CoinData
+  autoConfirm?: boolean
+  onBack?: () => void
 }
 
-export default function CoinEntry({ onCoinSelected, initialSerialNumber }: CoinEntryProps) {
-  const [serialNumber, setSerialNumber] = useState(initialSerialNumber ? String(initialSerialNumber) : '')
+export default function CoinEntry({ onCoinSelected, initialSerialNumber, coin, autoConfirm = false, onBack }: CoinEntryProps) {
+  const [serialNumber, setSerialNumber] = useState(initialSerialNumber ? String(initialSerialNumber) : (coin ? String(coin.sorszam) : ''))
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
-  const [coinData, setCoinData] = useState<CoinData | null>(null)
-  const [confirmed, setConfirmed] = useState(false)
+  const [coinData, setCoinData] = useState<CoinData | null>(coin || null)
+  const [confirmed, setConfirmed] = useState(autoConfirm)
 
   const handleSearch = async () => {
     const num = parseInt(serialNumber)
@@ -55,11 +58,14 @@ export default function CoinEntry({ onCoinSelected, initialSerialNumber }: CoinE
 
   return (
     <div className="bg-white rounded-lg shadow-md p-4 sm:p-6">
-      <h2 className="text-lg sm:text-xl font-semibold text-gray-800 mb-4">
-        Érme keresése sorszám alapján
-      </h2>
+      {!coin && (
+        <h2 className="text-lg sm:text-xl font-semibold text-gray-800 mb-4">
+          Érme keresése sorszám alapján
+        </h2>
+      )}
 
-      <div className="flex flex-col sm:flex-row gap-3 mb-6">
+      {!coin && (
+        <div className="flex flex-col sm:flex-row gap-3 mb-6">
         <input
           type="number"
           value={serialNumber}
@@ -79,6 +85,7 @@ export default function CoinEntry({ onCoinSelected, initialSerialNumber }: CoinE
           Keresés
         </button>
       </div>
+      )}
 
       {loading && (
         <div className="text-center py-8">
@@ -161,13 +168,16 @@ export default function CoinEntry({ onCoinSelected, initialSerialNumber }: CoinE
           <div className="flex gap-2 p-4 bg-gray-50 border-t border-gray-200 rounded-b-lg">
             <button
               onClick={() => {
-                setCoinData(null)
-                setSerialNumber('')
-                setConfirmed(false)
-              }}
+                if (onBack) {
+                  onBack()
+                } else {
+                  setCoinData(null)
+                  setSerialNumber('')
+                  setConfirmed(false)
+                }              }}
               className="flex-1 px-4 py-3 bg-gray-200 hover:bg-gray-300 text-gray-800 font-semibold rounded-lg transition-colors text-sm"
             >
-              ← Másik
+              ← {onBack ? 'Vissza' : 'Másik'}
             </button>
             <button
               onClick={handleConfirm}

@@ -5,10 +5,12 @@ import { GoogleUser } from './types/google'
 import { CoinData } from './types/coin'
 import CoinEntry from './components/CoinEntry'
 import PhotoCapture from './components/PhotoCapture'
+import CoinDetailsWithCapture from './components/CoinDetailsWithCapture'
 import UploadProgress from './components/UploadProgress'
 import UploadStatusIcon from './components/UploadStatusIcon'
 import CoinList from './components/CoinList'
 import BottomNavigation from './components/BottomNavigation'
+import { uploadQueue } from './services/uploadQueue'
 
 function App() {
   const [user, setUser] = useState<GoogleUser | null>(null)
@@ -48,6 +50,18 @@ function App() {
     
     initializeApp()
   }, [])
+
+  useEffect(() => {
+    const unsubscribe = uploadQueue.subscribe((queue) => {
+      const hasCompleted = queue.some(task => task.status === 'completed')
+      if (hasCompleted && activeView === 'list') {
+        setListRefreshTrigger(prev => prev + 1)
+      }
+    })
+    return () => {
+      unsubscribe()
+    }
+  }, [activeView])
 
   const handleSignIn = async () => {
     try {
@@ -140,20 +154,28 @@ function App() {
               </p>
             </div>
           </div>
+        ) : selectedCoin && sourceView === 'list' ? (
+          <CoinDetailsWithCapture
+            coin={selectedCoin}
+            onComplete={() => {
+              setListRefreshTrigger(prev => prev + 1)
+              setSelectedCoin(null)
+            }}
+            onBack={() => {
+              setSelectedCoin(null)
+            }}
+          />
         ) : selectedCoin ? (
           <PhotoCapture
             coin={selectedCoin}
             onComplete={() => {
-              if (sourceView === 'list') {
-                setListRefreshTrigger(prev => prev + 1)
-                setSelectedCoin(null)
-              } else {
-                const next = selectedCoin.sorszam + 1
-                setNextSerialNumber(next)
-                setSelectedCoin(null)
-              }
+              const next = selectedCoin.sorszam + 1
+              setNextSerialNumber(next)
+              setSelectedCoin(null)
             }}
-            onBack={() => setSelectedCoin(null)}
+            onBack={() => {
+              setSelectedCoin(null)
+            }}
           />
         ) : activeView === 'list' ? (
           <CoinList 
