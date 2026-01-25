@@ -181,19 +181,23 @@ export const signIn = (): Promise<string> => {
 }
 
 export const getAccessToken = (): string | null => {
+  if (!accessToken) {
+    accessToken = getTokenFromStorage()
+  }
   return accessToken
 }
 
 export const getUserInfo = async (): Promise<GoogleUser | null> => {
   try {
-    if (!accessToken) {
+    const token = getAccessToken()
+    if (!token) {
       console.error('No access token available')
       return null
     }
 
     const response = await fetch('https://www.googleapis.com/oauth2/v2/userinfo', {
       headers: {
-        Authorization: `Bearer ${accessToken}`
+        Authorization: `Bearer ${token}`
       }
     })
 
