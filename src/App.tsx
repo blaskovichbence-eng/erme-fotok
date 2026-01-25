@@ -5,6 +5,7 @@ import { GoogleUser } from './types/google'
 import { CoinData } from './types/coin'
 import CoinEntry from './components/CoinEntry'
 import PhotoCapture from './components/PhotoCapture'
+import UploadProgress from './components/UploadProgress'
 
 function App() {
   const [user, setUser] = useState<GoogleUser | null>(null)
@@ -151,6 +152,8 @@ function App() {
           <CoinEntry onCoinSelected={(coin) => setSelectedCoin(coin)} />
         )}
       </main>
+      
+      <UploadProgress />
     </div>
   )
 }

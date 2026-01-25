@@ -1,10 +1,8 @@
 import { useState } from 'react'
-import { Camera, Upload, CheckCircle, Loader } from 'lucide-react'
+import { Camera, Upload, CheckCircle } from 'lucide-react'
 import { CoinData } from '../types/coin'
-import { processImage, createImagePreview } from '../utils/imageProcessor'
-import { createFileName, getFolderName } from '../utils/fileNaming'
-import { uploadImageToDrive } from '../services/googleDrive'
-import { updateCoinImages } from '../services/googleSheets'
+import { createImagePreview } from '../utils/imageProcessor'
+import { uploadQueue } from '../services/uploadQueue'
 
 interface PhotoCaptureProps {
   coin: CoinData
@@ -21,8 +19,6 @@ interface ImageData {
 export default function PhotoCapture({ coin, onComplete, onBack }: PhotoCaptureProps) {
   const [frontImage, setFrontImage] = useState<ImageData | null>(null)
   const [backImage, setBackImage] = useState<ImageData | null>(null)
-  const [uploading, setUploading] = useState(false)
-  const [uploadProgress, setUploadProgress] = useState('')
   const [error, setError] = useState<string | null>(null)
 
   const hasExistingFront = !!coin.elolap_link
@@ -43,67 +39,19 @@ export default function PhotoCapture({ coin, onComplete, onBack }: PhotoCaptureP
     }
   }
 
-  const handleUpload = async () => {
+  const handleUpload = () => {
     if (!frontImage && !backImage) {
       setError('Válassz ki legalább egy képet a feltöltéshez')
       return
     }
 
-    setUploading(true)
-    setError(null)
-    setUploadProgress('Képek feldolgozása...')
+    uploadQueue.addTask(
+      coin,
+      frontImage?.file,
+      backImage?.file
+    )
 
-    try {
-      const folderName = getFolderName(coin.sorszam)
-      let frontLink = coin.elolap_link
-      let frontId = coin.elolap_id
-      let backLink = coin.hatlap_link
-      let backId = coin.hatlap_id
-
-      if (frontImage) {
-        setUploadProgress('Előlap feldolgozása...')
-        const processedFront = await processImage(frontImage.file)
-        const frontFileName = createFileName(coin.sorszam, coin.leiras, 'A')
-
-        setUploadProgress('Előlap feltöltése Drive-ba...')
-        const frontResult = await uploadImageToDrive(processedFront, frontFileName, folderName)
-        frontLink = frontResult.webViewLink
-        frontId = frontResult.fileId
-      }
-
-      if (backImage) {
-        setUploadProgress('Hátlap feldolgozása...')
-        const processedBack = await processImage(backImage.file)
-        const backFileName = createFileName(coin.sorszam, coin.leiras, 'B')
-
-        setUploadProgress('Hátlap feltöltése Drive-ba...')
-        const backResult = await uploadImageToDrive(processedBack, backFileName, folderName)
-        backLink = backResult.webViewLink
-        backId = backResult.fileId
-      }
-
-      setUploadProgress('Sheet frissítése...')
-      const success = await updateCoinImages(
-        coin.sorszam,
-        frontLink,
-        frontId,
-        backLink,
-        backId
-      )
-
-      if (!success) {
-        throw new Error('Sheet frissítési hiba')
-      }
-
-      setUploadProgress('Sikeres feltöltés! ✓')
-      setTimeout(() => {
-        onComplete()
-      }, 1500)
-    } catch (err: any) {
-      console.error('Upload error:', err)
-      setError(err.message || 'Feltöltési hiba történt')
-      setUploading(false)
-    }
+    onComplete()
   }
 
   return (
@@ -139,8 +87,7 @@ export default function PhotoCapture({ coin, onComplete, onBack }: PhotoCaptureP
                 />
                 <button
                   onClick={() => setFrontImage(null)}
-                  disabled={uploading}
-                  className="w-full px-4 py-3 bg-gray-200 hover:bg-gray-300 active:bg-gray-400 text-gray-800 font-semibold rounded-lg transition-colors disabled:opacity-50 text-base touch-manipulation"
+                  className="w-full px-4 py-3 bg-gray-200 hover:bg-gray-300 active:bg-gray-400 text-gray-800 font-semibold rounded-lg transition-colors text-base touch-manipulation"
                 >
                   Másik kép
                 </button>
@@ -155,7 +102,6 @@ export default function PhotoCapture({ coin, onComplete, onBack }: PhotoCaptureP
                     const file = e.target.files?.[0]
                     if (file) handleFileSelect(file, 'front')
                   }}
-                  disabled={uploading}
                   className="hidden"
                 />
                 <div className="cursor-pointer px-6 py-4 bg-blue-600 hover:bg-blue-700 active:bg-blue-800 text-white font-bold rounded-lg text-center transition-colors touch-manipulation">
@@ -184,8 +130,7 @@ export default function PhotoCapture({ coin, onComplete, onBack }: PhotoCaptureP
                 />
                 <button
                   onClick={() => setBackImage(null)}
-                  disabled={uploading}
-                  className="w-full px-4 py-3 bg-gray-200 hover:bg-gray-300 active:bg-gray-400 text-gray-800 font-semibold rounded-lg transition-colors disabled:opacity-50 text-base touch-manipulation"
+                  className="w-full px-4 py-3 bg-gray-200 hover:bg-gray-300 active:bg-gray-400 text-gray-800 font-semibold rounded-lg transition-colors text-base touch-manipulation"
                 >
                   Másik kép
                 </button>
@@ -200,7 +145,6 @@ export default function PhotoCapture({ coin, onComplete, onBack }: PhotoCaptureP
                     const file = e.target.files?.[0]
                     if (file) handleFileSelect(file, 'back')
                   }}
-                  disabled={uploading}
                   className="hidden"
                 />
                 <div className="cursor-pointer px-6 py-4 bg-blue-600 hover:bg-blue-700 active:bg-blue-800 text-white font-bold rounded-lg text-center transition-colors touch-manipulation">
@@ -213,39 +157,20 @@ export default function PhotoCapture({ coin, onComplete, onBack }: PhotoCaptureP
         }
       </div>
 
-      {uploading && (
-        <div className="mb-6 p-4 bg-blue-50 border-2 border-blue-200 rounded-lg">
-          <div className="flex items-center gap-3">
-            <Loader size={24} className="animate-spin text-blue-600 flex-shrink-0" />
-            <p className="text-blue-800 font-semibold text-base">{uploadProgress}</p>
-          </div>
-        </div>
-      )}
-
       <div className="flex flex-col sm:flex-row gap-3">
         <button
           onClick={onBack}
-          disabled={uploading}
-          className="w-full sm:flex-1 px-6 py-4 sm:py-3 bg-gray-200 hover:bg-gray-300 active:bg-gray-400 text-gray-800 font-semibold rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed text-lg touch-manipulation"
+          className="w-full sm:flex-1 px-6 py-4 sm:py-3 bg-gray-200 hover:bg-gray-300 active:bg-gray-400 text-gray-800 font-semibold rounded-lg transition-colors text-lg touch-manipulation"
         >
           ← Vissza
         </button>
         <button
           onClick={handleUpload}
-          disabled={uploading || (!frontImage && !backImage)}
+          disabled={!frontImage && !backImage}
           className="w-full sm:flex-1 px-6 py-4 sm:py-3 bg-green-600 hover:bg-green-700 active:bg-green-800 text-white font-semibold rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 text-lg touch-manipulation"
         >
-          {uploading ? (
-            <>
-              <Loader size={24} className="animate-spin" />
-              Feltöltés...
-            </>
-          ) : (
-            <>
-              <CheckCircle size={24} />
-              Feltöltés és mentés
-            </>
-          )}
+          <CheckCircle size={24} />
+          Hozzáadás a sorhoz
         </button>
       </div>
     </div>
