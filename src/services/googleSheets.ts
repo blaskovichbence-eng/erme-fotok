@@ -13,7 +13,7 @@ export const getCoinBySerialNumber = async (serialNumber: number): Promise<CoinD
       throw new Error('No access token available')
     }
     
-    const url = `${SHEETS_API_BASE}/${SHEET_ID}/values/A:Q`
+    const url = `${SHEETS_API_BASE}/${SHEET_ID}/values/A:Y`
     const response = await fetch(url, {
       headers: {
         'Authorization': `Bearer ${token}`,
@@ -50,22 +50,24 @@ export const getCoinBySerialNumber = async (serialNumber: number): Promise<CoinD
 
     const coinData: CoinData = {
       sorszam: parseInt(coinRow[0]) || 0,
-      tervezoSorszam: parseInt(coinRow[1]) || 0,
-      tervezo: coinRow[2] || '',
-      leiras: coinRow[3] || '',
-      dobozban: coinRow[4] || '',
-      csomagolas: coinRow[5] || '',
-      ertekesitve: coinRow[6] || '',
-      ev: coinRow[7] || '',
-      anyag: coinRow[8] || '',
-      suly: coinRow[9] || '',
-      meret: coinRow[10] || '',
-      megjegyzes: coinRow[11] || '',
-      kategoria: coinRow[12] || '',
-      elolap_link: coinRow[13] || '',
-      hatlap_link: coinRow[14] || '',
-      elolap_id: coinRow[15] || '',
-      hatlap_id: coinRow[16] || '',
+      tervezo: coinRow[1] || '',
+      leiras: coinRow[2] || '',
+      dobozban: coinRow[3] || '',
+      csomagolas: coinRow[4] || '',
+      ev: coinRow[5] || '',
+      anyag: coinRow[6] || '',
+      suly: coinRow[7] || '',
+      meret: coinRow[8] || '',
+      megjegyzes: coinRow[9] || '',
+      ertekesitve: coinRow[14] || '',
+      elolap_link: coinRow[17] || '',
+      hatlap_link: coinRow[18] || '',
+      elolap_id: coinRow[19] || '',
+      hatlap_id: coinRow[20] || '',
+      doboz_kep_link: coinRow[21] || '',
+      doboz_kep_id: coinRow[22] || '',
+      egyeb_kep_link: coinRow[23] || '',
+      egyeb_kep_id: coinRow[24] || '',
     }
 
     console.log('Parsed coin data:', coinData)
@@ -85,7 +87,7 @@ export const getCoinsWithoutImages = async (limit: number = 10, offset: number =
       throw new Error('No access token available')
     }
     
-    const url = `${SHEETS_API_BASE}/${SHEET_ID}/values/A:Q`
+    const url = `${SHEETS_API_BASE}/${SHEET_ID}/values/A:Y`
     const response = await fetch(url, {
       headers: {
         'Authorization': `Bearer ${token}`,
@@ -109,22 +111,24 @@ export const getCoinsWithoutImages = async (limit: number = 10, offset: number =
     const allCoins = dataRows
       .map((row: any) => ({
         sorszam: parseInt(row[0]) || 0,
-        tervezoSorszam: parseInt(row[1]) || 0,
-        tervezo: row[2] || '',
-        leiras: row[3] || '',
-        dobozban: row[4] || '',
-        csomagolas: row[5] || '',
-        ertekesitve: row[6] || '',
-        ev: row[7] || '',
-        anyag: row[8] || '',
-        suly: row[9] || '',
-        meret: row[10] || '',
-        megjegyzes: row[11] || '',
-        kategoria: row[12] || '',
-        elolap_link: row[13] || '',
-        hatlap_link: row[14] || '',
-        elolap_id: row[15] || '',
-        hatlap_id: row[16] || '',
+        tervezo: row[1] || '',
+        leiras: row[2] || '',
+        dobozban: row[3] || '',
+        csomagolas: row[4] || '',
+        ev: row[5] || '',
+        anyag: row[6] || '',
+        suly: row[7] || '',
+        meret: row[8] || '',
+        megjegyzes: row[9] || '',
+        ertekesitve: row[14] || '',
+        elolap_link: row[17] || '',
+        hatlap_link: row[18] || '',
+        elolap_id: row[19] || '',
+        hatlap_id: row[20] || '',
+        doboz_kep_link: row[21] || '',
+        doboz_kep_id: row[22] || '',
+        egyeb_kep_link: row[23] || '',
+        egyeb_kep_id: row[24] || '',
       }))
       .filter((coin: CoinData) => !coin.elolap_link && !coin.hatlap_link)
       .sort((a: CoinData, b: CoinData) => a.sorszam - b.sorszam)
@@ -144,7 +148,11 @@ export const updateCoinImages = async (
   frontLink: string,
   frontId: string,
   backLink: string,
-  backId: string
+  backId: string,
+  boxLink?: string,
+  boxId?: string,
+  otherLink?: string,
+  otherId?: string
 ): Promise<boolean> => {
   try {
     console.log('Updating coin images for serial number:', serialNumber)
@@ -182,7 +190,7 @@ export const updateCoinImages = async (
 
     const actualRowNumber = rowIndex + 1
 
-    const updateUrl = `${SHEETS_API_BASE}/${SHEET_ID}/values/N${actualRowNumber}:Q${actualRowNumber}?valueInputOption=RAW`
+    const updateUrl = `${SHEETS_API_BASE}/${SHEET_ID}/values/R${actualRowNumber}:Y${actualRowNumber}?valueInputOption=RAW`
     const updateResponse = await fetch(updateUrl, {
       method: 'PUT',
       headers: {
@@ -190,7 +198,7 @@ export const updateCoinImages = async (
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        values: [[frontLink, backLink, frontId, backId]]
+        values: [[frontLink, backLink, frontId, backId, boxLink || '', boxId || '', otherLink || '', otherId || '']]
       })
     })
 

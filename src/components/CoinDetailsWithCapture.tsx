@@ -19,23 +19,31 @@ interface ImageData {
 export default function CoinDetailsWithCapture({ coin, onComplete, onBack }: CoinDetailsWithCaptureProps) {
   const [frontImage, setFrontImage] = useState<ImageData | null>(null)
   const [backImage, setBackImage] = useState<ImageData | null>(null)
+  const [boxImage, setBoxImage] = useState<ImageData | null>(null)
+  const [otherImage, setOtherImage] = useState<ImageData | null>(null)
   const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
     setFrontImage(null)
     setBackImage(null)
+    setBoxImage(null)
+    setOtherImage(null)
     setError(null)
   }, [coin.sorszam])
 
-  const handleFileSelect = async (file: File, side: 'front' | 'back') => {
+  const handleFileSelect = async (file: File, side: 'front' | 'back' | 'box' | 'other') => {
     try {
       const preview = await createImagePreview(file)
       const imageData: ImageData = { file, preview }
 
       if (side === 'front') {
         setFrontImage(imageData)
-      } else {
+      } else if (side === 'back') {
         setBackImage(imageData)
+      } else if (side === 'box') {
+        setBoxImage(imageData)
+      } else if (side === 'other') {
+        setOtherImage(imageData)
       }
     } catch (err) {
       setError('Kép betöltési hiba')
@@ -43,7 +51,7 @@ export default function CoinDetailsWithCapture({ coin, onComplete, onBack }: Coi
   }
 
   const handleUpload = () => {
-    if (!frontImage && !backImage) {
+    if (!frontImage && !backImage && !boxImage && !otherImage) {
       setError('Válassz ki legalább egy képet a feltöltéshez')
       return
     }
@@ -51,7 +59,9 @@ export default function CoinDetailsWithCapture({ coin, onComplete, onBack }: Coi
     uploadQueue.addTask(
       coin,
       frontImage?.file,
-      backImage?.file
+      backImage?.file,
+      boxImage?.file,
+      otherImage?.file
     )
 
     onComplete()
@@ -83,7 +93,7 @@ export default function CoinDetailsWithCapture({ coin, onComplete, onBack }: Coi
         
         <div className="grid grid-cols-2 gap-2">
           <div className="flex items-baseline gap-2">
-            <span className="text-xs text-gray-500">Méret:</span>
+            <span className="text-xs text-gray-500">Méret (mm):</span>
             <span className="text-sm font-semibold text-gray-800">{coin.meret || '-'}</span>
           </div>
           <div className="flex items-baseline gap-2">
@@ -173,6 +183,86 @@ export default function CoinDetailsWithCapture({ coin, onComplete, onBack }: Coi
             </label>
           )}
         </div>
+
+        <div className="border border-gray-300 rounded-lg p-3 bg-gray-50">
+          <div className="flex items-center justify-between mb-2">
+            <h3 className="text-sm font-bold text-gray-800">Doboz kép (D) <span className="text-xs text-gray-500">(opcionális)</span></h3>
+            <Camera size={20} className="text-gray-400" />
+          </div>
+
+          {boxImage ? (
+            <div>
+              <img
+                src={boxImage.preview}
+                alt="Doboz előnézet"
+                className="w-full h-32 object-contain mb-2 rounded bg-white"
+              />
+              <button
+                onClick={() => setBoxImage(null)}
+                className="w-full px-3 py-2 bg-gray-200 hover:bg-gray-300 text-gray-800 font-medium rounded text-sm"
+              >
+                Másik kép
+              </button>
+            </div>
+          ) : (
+            <label className="block">
+              <input
+                type="file"
+                accept="image/*"
+                capture="environment"
+                onChange={(e) => {
+                  const file = e.target.files?.[0]
+                  if (file) handleFileSelect(file, 'box')
+                }}
+                className="hidden"
+              />
+              <div className="cursor-pointer px-4 py-3 bg-gray-400 hover:bg-gray-500 text-white font-semibold rounded text-center text-sm">
+                <Upload size={18} className="inline mr-2" />
+                Kép kiválasztása
+              </div>
+            </label>
+          )}
+        </div>
+
+        <div className="border border-gray-300 rounded-lg p-3 bg-gray-50">
+          <div className="flex items-center justify-between mb-2">
+            <h3 className="text-sm font-bold text-gray-800">Egyéb kép (E) <span className="text-xs text-gray-500">(opcionális)</span></h3>
+            <Camera size={20} className="text-gray-400" />
+          </div>
+
+          {otherImage ? (
+            <div>
+              <img
+                src={otherImage.preview}
+                alt="Egyéb előnézet"
+                className="w-full h-32 object-contain mb-2 rounded bg-white"
+              />
+              <button
+                onClick={() => setOtherImage(null)}
+                className="w-full px-3 py-2 bg-gray-200 hover:bg-gray-300 text-gray-800 font-medium rounded text-sm"
+              >
+                Másik kép
+              </button>
+            </div>
+          ) : (
+            <label className="block">
+              <input
+                type="file"
+                accept="image/*"
+                capture="environment"
+                onChange={(e) => {
+                  const file = e.target.files?.[0]
+                  if (file) handleFileSelect(file, 'other')
+                }}
+                className="hidden"
+              />
+              <div className="cursor-pointer px-4 py-3 bg-gray-400 hover:bg-gray-500 text-white font-semibold rounded text-center text-sm">
+                <Upload size={18} className="inline mr-2" />
+                Kép kiválasztása
+              </div>
+            </label>
+          )}
+        </div>
       </div>
 
       <div className="flex gap-2 p-4 bg-gray-50 border-t border-gray-200 rounded-b-lg">
@@ -184,7 +274,7 @@ export default function CoinDetailsWithCapture({ coin, onComplete, onBack }: Coi
         </button>
         <button
           onClick={handleUpload}
-          disabled={!frontImage && !backImage}
+          disabled={!frontImage && !backImage && !boxImage && !otherImage}
           className="flex-1 px-4 py-3 bg-green-600 hover:bg-green-700 text-white font-semibold rounded-lg disabled:opacity-50 flex items-center justify-center gap-2 text-sm"
         >
           <CheckCircle size={18} />

@@ -119,7 +119,7 @@ export default function CoinEntry({ onCoinSelected, initialSerialNumber, coin, a
             
             <div className="grid grid-cols-2 gap-2">
               <div className="flex items-baseline gap-2">
-                <span className="text-xs text-gray-500">Méret:</span>
+                <span className="text-xs text-gray-500">Méret (mm):</span>
                 <span className="text-sm font-semibold text-gray-800">{coinData.meret || '-'}</span>
               </div>
               <div className="flex items-baseline gap-2">

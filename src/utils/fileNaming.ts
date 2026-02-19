@@ -11,7 +11,7 @@ export const createSlug = (text: string, maxLength: number = 25): string => {
 export const createFileName = (
   serialNumber: number,
   description: string,
-  side: 'A' | 'B'
+  side: 'A' | 'B' | 'D' | 'E'
 ): string => {
   const slug = createSlug(description, 25)
   const paddedNumber = String(serialNumber).padStart(4, '0')

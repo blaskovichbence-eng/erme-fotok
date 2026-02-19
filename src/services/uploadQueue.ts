@@ -15,6 +15,14 @@ export interface UploadTask {
     file: File
     blob?: Blob
   }
+  boxImage?: {
+    file: File
+    blob?: Blob
+  }
+  otherImage?: {
+    file: File
+    blob?: Blob
+  }
   status: 'pending' | 'processing' | 'uploading' | 'completed' | 'failed'
   progress: string
   error?: string
@@ -77,7 +85,7 @@ class UploadQueueManager {
     return () => this.listeners.delete(listener)
   }
 
-  public addTask(coin: CoinData, frontImage?: File, backImage?: File): string {
+  public addTask(coin: CoinData, frontImage?: File, backImage?: File, boxImage?: File, otherImage?: File): string {
     const taskId = `${coin.sorszam}-${Date.now()}`
     
     const task: UploadTask = {
@@ -85,6 +93,8 @@ class UploadQueueManager {
       coin,
       frontImage: frontImage ? { file: frontImage } : undefined,
       backImage: backImage ? { file: backImage } : undefined,
+      boxImage: boxImage ? { file: boxImage } : undefined,
+      otherImage: otherImage ? { file: otherImage } : undefined,
       status: 'pending',
       progress: 'Várakozás...',
       createdAt: Date.now(),
@@ -136,6 +146,10 @@ class UploadQueueManager {
       let frontId = task.coin.elolap_id
       let backLink = task.coin.hatlap_link
       let backId = task.coin.hatlap_id
+      let boxLink = task.coin.doboz_kep_link
+      let boxId = task.coin.doboz_kep_id
+      let otherLink = task.coin.egyeb_kep_link
+      let otherId = task.coin.egyeb_kep_id
 
       if (task.frontImage) {
         task.progress = 'Előlap feldolgozása...'
@@ -171,6 +185,40 @@ class UploadQueueManager {
         backId = backResult.fileId
       }
 
+      if (task.boxImage) {
+        task.progress = 'Doboz kép feldolgozása...'
+        this.notifyListeners()
+
+        const processedBox = await processImage(task.boxImage.file)
+        task.boxImage.blob = processedBox
+
+        task.status = 'uploading'
+        task.progress = 'Doboz kép feltöltése...'
+        this.notifyListeners()
+
+        const boxFileName = createFileName(task.coin.sorszam, task.coin.leiras, 'D')
+        const boxResult = await uploadImageToDrive(processedBox, boxFileName, folderName)
+        boxLink = boxResult.webViewLink
+        boxId = boxResult.fileId
+      }
+
+      if (task.otherImage) {
+        task.progress = 'Egyéb kép feldolgozása...'
+        this.notifyListeners()
+
+        const processedOther = await processImage(task.otherImage.file)
+        task.otherImage.blob = processedOther
+
+        task.status = 'uploading'
+        task.progress = 'Egyéb kép feltöltése...'
+        this.notifyListeners()
+
+        const otherFileName = createFileName(task.coin.sorszam, task.coin.leiras, 'E')
+        const otherResult = await uploadImageToDrive(processedOther, otherFileName, folderName)
+        otherLink = otherResult.webViewLink
+        otherId = otherResult.fileId
+      }
+
       task.progress = 'Sheet frissítése...'
       this.notifyListeners()
 
@@ -179,7 +227,11 @@ class UploadQueueManager {
         frontLink || '',
         frontId || '',
         backLink || '',
-        backId || ''
+        backId || '',
+        boxLink || '',
+        boxId || '',
+        otherLink || '',
+        otherId || ''
       )
 
       task.status = 'completed'
