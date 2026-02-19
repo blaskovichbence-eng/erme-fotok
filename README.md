@@ -2,16 +2,25 @@
 
 Családi érmegyűjtemény digitalizálására készült PWA alkalmazás Google Sheets és Drive integrációval.
 
+## 🔐 Hosting és Verziókezelés
+
+- **GitHub Repository**: Személyes Gmail fiókkal regisztrált GitHub-on
+- **Deployment**: Személyes Gmail fiókkal regisztrált Render.com-on
+- **Repository URL**: https://github.com/blaskovichbence-eng/erme-fotok
+
 ## Funkciók
 
 - ✅ Google OAuth2 bejelentkezés
 - ✅ Google Sheets integráció - érmék adatainak lekérdezése sorszám alapján
 - ✅ Képfeltöltés mobilról (kamera vagy galéria)
+- ✅ **4 képtípus támogatása**: Előlap (A), Hátlap (B), Doboz kép (D), Egyéb kép (E)
 - ✅ Automatikus képfeldolgozás (tömörítés max 1MB)
 - ✅ Google Drive feltöltés strukturált mappákba (50-es csoportok)
 - ✅ Automatikus fájlnév generálás slug-gal (max 25 karakter)
-- ✅ Sheet automatikus frissítése linkekkel és Drive ID-kkal
-- ✅ Automatikus ugrás következő sorszámra
+- ✅ Sheet automatikus frissítése linkekkel és Drive ID-kkal (A-Y oszlopok)
+- ✅ Háttérben futó feltöltési sor (upload queue)
+- ✅ Lista nézet - képek nélküli érmék lapozható listája
+- ✅ Automatikus következő érme betöltés lista nézetben
 - ✅ PWA támogatás - Add to Home Screen
 
 ## Telepítés
@@ -47,11 +56,11 @@ VITE_DRIVE_FOLDER_ID=your-drive-folder-id
 
 ### 4. Google Sheet struktúra
 
-A Sheet-nek tartalmaznia kell ezeket az oszlopokat:
+A Sheet-nek tartalmaznia kell ezeket az oszlopokat (A-Y):
 
-| A | B | C | D | ... | N | O | P | Q |
-|---|---|---|---|-----|---|---|---|---|
-| Sorszám | Tervező sorszám | Tervező | Leírás | ... | Előlap Kép | Hátlap Kép | Előlap Drive ID | Hátlap Drive ID |
+| A | B | C | D | E | F | G | H | I | J | ... | O | ... | R | S | T | U | V | W | X | Y |
+|---|---|---|---|---|---|---|---|---|---|-----|---|-----|---|---|---|---|---|---|---|---|
+| Sorszám | Tervező | Leírás | Dobozban | Csomagolás | Év | Anyag | Súly | Méret | Megjegyzés | ... | Értékesítve | ... | Előlap Kép | Hátlap Kép | Előlap Drive ID | Hátlap Drive ID | Doboz Kép | Doboz Drive ID | Egyéb Kép | Egyéb Drive ID |
 
 ### 5. Google Drive mappa struktúra
 
@@ -106,7 +115,11 @@ Példa: `4086_csonka-janos-1852-1939_A.jpg`
 
 - Sorszám: 4 számjegy, nullákkal kiegészítve
 - Slug: leírásból generált, max 25 karakter, ékezet nélkül
-- Oldal: A (előlap) vagy B (hátlap)
+- Oldal: 
+  - **A** (előlap) - kötelező
+  - **B** (hátlap) - kötelező
+  - **D** (doboz kép) - opcionális
+  - **E** (egyéb kép) - opcionális
 
 ## PWA Telepítés iPhone-on
 
