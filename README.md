@@ -70,6 +70,32 @@ Root mappa (pl. `Erme_kepek`) alatt automatikusan létrejönnek az 50-es almapp�
 - `0101-0150`
 - stb.
 
+### 6. Google Sheets és Drive megosztása több felhasználóval
+
+Az alkalmazást több Google fiókkal is lehet használni, ha megfelelően megosztod a Sheets-et és Drive mappákat.
+
+#### **Google Sheets megosztása:**
+1. Nyisd meg a Google Sheets táblázatot
+2. Kattints a jobb felső sarokban a **"Share"** (Megosztás) gombra
+3. Add hozzá a másik Google account email címét
+4. Állítsd be a jogosultságot: **"Editor"** (Szerkesztő)
+5. Kattints **"Send"**
+
+#### **Google Drive root mappa megosztása:**
+1. Menj a Google Drive-ba
+2. Keresd meg a root mappát (pl. `Erme_kepek`)
+3. Jobb klikk → **"Share"** (Megosztás)
+4. Add hozzá a másik Google account email címét
+5. Állítsd be a jogosultságot: **"Editor"** (Szerkesztő)
+6. Kattints **"Send"**
+
+**Fontos:**
+- A root mappa Editor jogosultsága automatikusan érvényes lesz az összes almappára
+- Az alkalmazás automatikusan létrehozza az új mappákat ha szükséges
+- Az új mappák öröklik a root mappa jogosultságait
+- Minden felhasználó saját Google fiókjával jelentkezik be az alkalmazásba
+- Az OAuth2 scope (`drive.file`) lehetővé teszi új mappák létrehozását és képek feltöltését
+
 ## Fejlesztés
 
 ### Lokális futtatás
