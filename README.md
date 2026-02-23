@@ -50,7 +50,12 @@ VITE_DRIVE_FOLDER_ID=your-drive-folder-id
    - `http://localhost:3000`
    - `http://127.0.0.1:3000`
    - Az ngrok URL (ha használod)
-4. **API Key** létrehozása és korlátozása:
+4. **OAuth consent screen** → **Scopes**:
+   - `https://www.googleapis.com/auth/spreadsheets` (Google Sheets API)
+   - `https://www.googleapis.com/auth/drive` (Google Drive API - teljes hozzáférés)
+   - `https://www.googleapis.com/auth/userinfo.profile`
+   - `https://www.googleapis.com/auth/userinfo.email`
+5. **API Key** létrehozása és korlátozása:
    - Google Sheets API
    - Google Drive API
 
@@ -94,7 +99,17 @@ Az alkalmazást több Google fiókkal is lehet használni, ha megfelelően megos
 - Az alkalmazás automatikusan létrehozza az új mappákat ha szükséges
 - Az új mappák öröklik a root mappa jogosultságait
 - Minden felhasználó saját Google fiókjával jelentkezik be az alkalmazásba
-- Az OAuth2 scope (`drive.file`) lehetővé teszi új mappák létrehozását és képek feltöltését
+- Az OAuth2 scope (`drive`) lehetővé teszi:
+  - Megosztott mappák láthatóságát minden felhasználó számára
+  - Új mappák létrehozását és képek feltöltését
+  - **Egy 50-es tartományhoz csak egy mappa létrehozását** (nem duplikálódnak a mappák felhasználónként)
+
+**Újra-authorizáció szükséges:**
+- A scope változás (`drive.file` → `drive`) miatt minden felhasználónak újra be kell jelentkeznie
+- Lépések:
+  1. Kijelentkezés az alkalmazásból
+  2. Böngésző cache törlése (vagy inkognitó mód használata)
+  3. Bejelentkezés újra → új jogosultságok engedélyezése
 
 ## Fejlesztés
 
